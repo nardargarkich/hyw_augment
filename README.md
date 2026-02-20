@@ -42,12 +42,13 @@ targeting Ministral 14B via Ollama, but portable to anything).
 
 ```
 src/hyw_augment/
-├── __init__.py      # Package exports
-├── __main__.py      # python -m hyw_augment
-├── cli.py           # CLI runner
-├── conllu.py        # CoNLL-U treebank parser
-├── nayiri.py        # Nayiri lexicon parser + morphological lookup
-└── coverage.py      # Cross-reference treebank ↔ lexicon
+├── __init__.py               # Package exports
+├── __main__.py               # python -m hyw_augment
+├── cli.py                    # CLI runner
+├── extract_function_words.py # extracts function words list from UD database in Nayiri format
+├── conllu.py                 # CoNLL-U treebank parser
+├── nayiri.py                 # Nayiri lexicon parser + morphological lookup
+└── coverage.py               # Cross-reference treebank ↔ lexicon
 ```
 
 ### conllu.py
@@ -69,6 +70,7 @@ src/hyw_augment/
 ## Next steps
 
 1. **Run coverage check** with full data (all 3 UD splits + full Nayiri JSON)
+    -- started, with function word list generated from UD dataset: please note function words file incomplete!
 2. **Build feature mapping** between UD tags and Nayiri inflection categories
 3. **Extract syntactic templates** from UD treebank — common sentence patterns
 4. **Ollama integration** — wrap Ministral with morphological validation
