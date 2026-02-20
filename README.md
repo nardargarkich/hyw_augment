@@ -74,4 +74,9 @@ src/hyw_augment/
 4. **Ollama integration** — wrap Ministral with morphological validation
 5. **Prompt engineering** — system prompts that leverage the linguistic data
 
-Also want to clean up the code a bit somewhere in there. 
+
+## Grab-bag of TODOs/stretch goals/related project ideas:
+
+    - clean up code
+    - find/make/grab more texts, especially colloquial ones
+    - create minimap of different latinizations
