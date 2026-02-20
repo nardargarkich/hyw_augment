@@ -1,0 +1,30 @@
+[project]
+name = "hyw-augment"
+version = "0.1.0"
+description = "Western Armenian morphological augmentation layer for LLMs"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Iskandar"},
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "ipython",
+    "pytest",
+]
+ollama = [
+    "ollama",
+]
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
