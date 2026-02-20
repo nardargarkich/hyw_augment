@@ -1,0 +1,40 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# VS Code
+.vscode/
+
+# Jupyter
+*.ipynb_checkpoints
+
+# Data
+*.csv
+*.tsv
+*.log
+*.sqlite
+*.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project files
+NOTES.md
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Test
+.coverage
+htmlcov/
+
+# Misc
+*.swp
+*.bak
+*.tmp
