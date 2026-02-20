@@ -1,9 +1,9 @@
 [project]
-name = "hyw-augment"
+name = "hyw_augment"
 version = "0.1.0"
 description = "Western Armenian morphological augmentation layer for LLMs"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = {text = "MPL 2.0"}
 authors = [
     {name = "Iskandar"},
 ]
@@ -20,8 +20,8 @@ ollama = [
 ]
 
 [build-system]
-requires = ["setuptools>=75.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+requires = ["setuptools>=75.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
