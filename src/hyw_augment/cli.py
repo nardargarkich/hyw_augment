@@ -28,7 +28,8 @@ def main():
     )
     parser.add_argument(
         "--nayiri",
-        help="Path to Nayiri lexicon JSON",
+        nargs="+",
+        help="Path(s) to Nayiri lexicon JSON",
     )
     parser.add_argument(
         "--analyze",
@@ -62,7 +63,8 @@ def main():
     if args.nayiri:
         from hyw_augment.nayiri import Lexicon
 
-        lex = Lexicon.from_file(args.nayiri)
+        paths = [Path(p) for p in args.nayiri]
+        lex = Lexicon.from_files(*paths)
         print("═══ Nayiri Lexicon ═══")
         print(lex.summary())
         print()
