@@ -230,6 +230,33 @@ class Lexicon:
                 if lower != surface:
                     self.form_index.setdefault(lower, []).append(analysis)
 
+    def merge(self, other: Lexicon) -> None:
+        """
+        Merge another Lexicon into this one (e.g. function words supplement).
+        Inflections, lemma entries, and indexes are all combined.
+        """
+        self.inflections.update(other.inflections)
+        self.lemma_entries.extend(other.lemma_entries)
+        self.num_lexemes += other.num_lexemes
+        self.num_word_forms += other.num_word_forms
+
+        # Rebuild indexes from scratch (simpler than incremental merge)
+        self._build_indexes()
+
+    @classmethod
+    def from_files(cls, *paths: str | Path) -> Lexicon:
+        """Load and merge multiple lexicon JSON files."""
+        result = None
+        for p in paths:
+            lex = cls.from_file(p)
+            if result is None:
+                result = lex
+            else:
+                result.merge(lex)
+        if result is None:
+            return cls()
+        return result
+
     # ── Analysis (form → lemma + features) ────────────────────────────────
 
     def analyze(self, form: str) -> list[MorphAnalysis]:
