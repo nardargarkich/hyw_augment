@@ -31,7 +31,7 @@ targeting Ministral 14B via Ollama, but portable to anything).
 
 ### Nayiri Armenian Lexicon
 - Source: http://www.nayiri.com/nayiri-armenian-lexicon?l=en
-- Released 2026-02-15 (brand new!)
+- Released 2026-02-15 (new!)
 - 7,076 lexemes, 7,931 lemmas, 1,491,045 word forms, 709 inflections
 - Western Armenian traditional orthography only (this release)
 - JSON format, hierarchical: lexeme → lemma → word forms → inflection IDs
@@ -70,7 +70,7 @@ src/hyw_augment/
 ## Next steps
 
 1. **Run coverage check** with full data (all 3 UD splits + full Nayiri JSON)
-    -- started, with function word list generated from UD dataset: please note function words file incomplete!
+    -- started, with function word list generated from UD dataset: please note function words file extracted but unchecked!
 2. **Build feature mapping** between UD tags and Nayiri inflection categories
 3. **Extract syntactic templates** from UD treebank — common sentence patterns
 4. **Ollama integration** — wrap Ministral with morphological validation
