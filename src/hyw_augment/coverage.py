@@ -18,8 +18,10 @@ Usage:
 
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass, field
 from collections import Counter
+from pathlib import Path
 
 from hyw_augment.conllu import Treebank, Token
 from hyw_augment.nayiri import Lexicon
@@ -60,6 +62,9 @@ class CoverageReport:
     lemma_mismatches: list[tuple[str, str, str, list[str]]] = field(
         default_factory=list
     )  # (form, ud_lemma, ud_pos, [nayiri_lemmas])
+    pos_mismatches: list[tuple[str, str, str, list[str], list[str]]] = field(
+        default_factory=list
+    )  # (form, ud_lemma, ud_pos, [nayiri_lemmas], [nayiri_pos_ud])
 
     def summary(self) -> str:
         if self.checked_tokens == 0:
@@ -110,6 +115,51 @@ class CoverageReport:
                 )
 
         return "\n".join(lines)
+
+    def write_mismatches(self, path: Path) -> None:
+        """Write full mismatch lists to a TSV file for manual review.
+
+        Columns: mismatch_type, form, ud_lemma, ud_pos, nayiri_lemmas, nayiri_pos, count
+        Rows are deduplicated; count reflects how many times that combination appeared.
+        """
+        # Deduplicate lemma mismatches: key = (form, ud_lemma, ud_pos, nayiri_lemmas_tuple)
+        lemma_counts: Counter = Counter()
+        lemma_rows: dict = {}
+        for form, ud_lemma, ud_pos, nayiri_lemmas in self.lemma_mismatches:
+            key = (form, ud_lemma, ud_pos, tuple(sorted(nayiri_lemmas)))
+            lemma_counts[key] += 1
+            lemma_rows[key] = nayiri_lemmas
+
+        # Deduplicate POS mismatches: key = (form, ud_lemma, ud_pos, nayiri_pos_tuple)
+        pos_counts: Counter = Counter()
+        pos_rows: dict = {}
+        for form, ud_lemma, ud_pos, nayiri_lemmas, nayiri_pos in self.pos_mismatches:
+            key = (form, ud_lemma, ud_pos, tuple(sorted(nayiri_pos)))
+            pos_counts[key] += 1
+            pos_rows[key] = (nayiri_lemmas, nayiri_pos)
+
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f, delimiter="\t")
+            writer.writerow(
+                ["mismatch_type", "form", "ud_lemma", "ud_pos",
+                 "nayiri_lemmas", "nayiri_pos", "count"]
+            )
+
+            for key, count in lemma_counts.most_common():
+                form, ud_lemma, ud_pos, _ = key
+                nayiri_lemmas = lemma_rows[key]
+                writer.writerow([
+                    "lemma", form, ud_lemma, ud_pos,
+                    ", ".join(nayiri_lemmas), "", count,
+                ])
+
+            for key, count in pos_counts.most_common():
+                form, ud_lemma, ud_pos, _ = key
+                nayiri_lemmas, nayiri_pos = pos_rows[key]
+                writer.writerow([
+                    "pos", form, ud_lemma, ud_pos,
+                    ", ".join(nayiri_lemmas), ", ".join(nayiri_pos), count,
+                ])
 
 
 # Map Nayiri POS names to UD POS tags for comparison
@@ -179,6 +229,10 @@ def check_coverage(
                 }
                 if tok.upos in nayiri_pos_ud:
                     report.pos_matches += 1
+                else:
+                    report.pos_mismatches.append(
+                        (tok.form, tok.lemma, tok.upos, nayiri_lemmas, sorted(nayiri_pos_ud))
+                    )
             else:
                 report.missing_forms[tok.form] += 1
                 report.missing_lemmas[tok.lemma] += 1

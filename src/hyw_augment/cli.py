@@ -44,6 +44,11 @@ def main():
         action="store_true",
         help="Run coverage check (requires both --conllu and --nayiri)",
     )
+    parser.add_argument(
+        "--mismatches",
+        metavar="FILE",
+        help="Write full mismatch list to a TSV file (use with --coverage)",
+    )
     args = parser.parse_args()
 
     tb = None
@@ -106,6 +111,9 @@ def main():
 
         report = check_coverage(tb, lex)
         print(report.summary())
+        if args.mismatches:
+            report.write_mismatches(Path(args.mismatches))
+            print(f"\nMismatches written to {args.mismatches}")
 
 
 if __name__ == "__main__":
