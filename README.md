@@ -79,6 +79,40 @@ src/hyw_augment/
 
 ## Grab-bag of TODOs/stretch goals/related project ideas:
 
-    - clean up code
-    - find/make/grab more texts, especially colloquial ones
-    - create minimap of different latinizations
+  - clean up code
+  - find/make/grab more texts, especially colloquial ones
+  - create minimap of different latinizations
+
+
+## Usage
+
+### CLI
+
+Analyze a word — give it a surface form, get back all possible lemmas and grammatical analyses as currently documented
+`bashpython -m hyw_augment.cli --nayiri data/*.json --analyze "արշաւը"`
+
+Generate forms from a lemma — go the other direction, give it a dictionary form and see all its inflections
+`bashpython -m hyw_augment.cli --nayiri data/*.json --generate "արշաւ"`
+
+Checking coverage between current datasets
+`python -m hyw_augment.cli --conllu data/*.conllu --nayiri data/nayiri-armenian-lexicon-2026-02-15-v1.json data/function-words.json --coverage`
+
+Finding dataset mismatches
+`python -m hyw_augment --conllu data/*.conllu --nayiri data/nayiri*.json --coverage --mismatches mismatches.tsv`
+
+### Python
+
+Treebank exploration in Python
+```
+from hyw_augment import Treebank
+
+tb = Treebank.from_dir("data/")
+tb.vocab()           # lemma → set of observed surface forms
+tb.pos_distribution()
+tb.deprel_distribution()  # what dependency relations appear and how often
+
+for sent in tb:
+    root = sent.root()           # the main verb/predicate
+    nouns = sent.by_upos("NOUN", "PROPN")  # filter by POS
+    # each token has .form, .lemma, .upos, .feats, .deprel, .head
+```
