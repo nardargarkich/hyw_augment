@@ -99,8 +99,22 @@ Generate forms from a lemma — go the other direction, give it a dictionary for
 Checking coverage between current datasets
 `python -m hyw_augment.cli --conllu data/*.conllu --nayiri data/nayiri-armenian-lexicon-2026-02-15-v1.json data/function-words.json --coverage`
 
-Finding dataset mismatches
-`python -m hyw_augment --conllu data/*.conllu --nayiri data/nayiri*.json --coverage --mismatches mismatches.tsv`
+Finding Nayiri/UD dataset mismatches
+`python -m hyw_augment --conllu data/*.conllu --nayiri data/nayiri*.json --coverage --mismatches data/mismatches.tsv`
+
+Finding dataset mismatches w/added wordlists
+`python -m hyw_augment --conllu data/*.conllu --nayiri data/*.json --coverage --mismatches data/mismatches-ext.tsv`
+
+extract mismatched words between UD and Nayiri
+(first pass for building function words list)
+```
+python -m hyw_augment.extract_words_from_UD \
+    --conllu data/*.conllu \
+    --nayiri data/nayiri-armenian-lexicon-2026-02-15-v1.json \
+    --output data/function-words.json \
+    --indent \
+    --min-freq 3 # can adapt up or down
+```
 
 ### Python
 

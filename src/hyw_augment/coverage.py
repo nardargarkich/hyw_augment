@@ -164,10 +164,17 @@ class CoverageReport:
 
 # Map Nayiri POS names to UD POS tags for comparison
 _NAYIRI_TO_UD_POS = {
-    "NOUN": "NOUN",
-    "VERB": "VERB",
-    "ADJECTIVE": "ADJ",
-    "ADVERB": "ADV",
+    "NOUN": {"NOUN", "PROPN"},      # NOUN entries can match PROPN tokens
+    "CONJUNCTION": {"CCONJ", "SCONJ"},  # CONJUNCTION entries can match either
+    "VERB": {"VERB"},
+    "ADJECTIVE": {"ADJ"},
+    "ADVERB": {"ADV"},
+    "ADPOSITION": {"ADP"},
+    "PRONOUN": {"PRON"},
+    "DETERMINER": {"DET"},
+    "PARTICLE": {"PART"},
+    "INTERJECTION": {"INTJ"},
+    "AUX": {"AUX"},
 }
 
 
@@ -224,9 +231,10 @@ def check_coverage(
                     )
 
                 # Check POS agreement
-                nayiri_pos_ud = {
-                    _NAYIRI_TO_UD_POS.get(a.pos, a.pos) for a in analyses
-                }
+                nayiri_pos_ud = set()
+                for a in analyses:
+                    nayiri_pos_ud |= _NAYIRI_TO_UD_POS.get(a.pos, {a.pos})
+
                 if tok.upos in nayiri_pos_ud:
                     report.pos_matches += 1
                 else:
