@@ -69,23 +69,6 @@ src/hyw_augment/
 - `check_coverage(treebank, lexicon)` → CoverageReport
 - Reports: % found, lemma agreement, POS agreement, missing forms
 
-## Next steps
-
-1. **Run coverage check** with full data (all 3 UD splits + full Nayiri JSON)
-    -- started, with function word list generated from UD dataset: please note function words file extracted but unchecked, and contains many non-function words!
-2. **Build feature mapping** between UD tags and Nayiri inflection categories
-3. **Extract syntactic templates** from UD treebank — common sentence patterns
-4. **Ollama integration** — wrap Ministral with morphological validation
-5. **Prompt engineering** — system prompts that leverage the linguistic data
-
-
-## Grab-bag of TODOs/stretch goals/related project ideas:
-
-  - clean up code
-  - find/make/grab more texts, especially colloquial ones
-  - create minimap of different latinizations
-
-
 ## Usage
 
 ### CLI
@@ -132,3 +115,17 @@ for sent in tb:
     nouns = sent.by_upos("NOUN", "PROPN")  # filter by POS
     # each token has .form, .lemma, .upos, .feats, .deprel, .head
 ```
+
+
+## Current questions
+
+- What sort of word is է and similar? An auxilary? A function word? A suffix? It is obviously all of these, but how best to integrate? Need to make list of function words separate from words missing from Nayiri lexicon in general (lexicon is stated on project page to be incomplete/rolling release).
+- Somewhat similarly: currently this is working on inflectional morphology, ie we're taking lemmas and giving them word forms. But Armenian is (at least somewhat) agglutinative. How to handle derivational morphology (ie building words from word-bits)? In present setup from Nayiri, "անհատ" is one lexeme/lemma; but it's also ան = without հատ = one discrete unit, and native speakers would recognize this pattern. A parser should too. Quick'n'dirty step one is to do stripping based on set prefix/suffix list: need to make. Future steps lead towards a finite state transducer type thing, which will take... a while.
+
+
+## Grab-bag of small(er) TODOs/stretch goals/related project ideas:
+
+  - clean up code
+  - find/make/grab more texts, especially colloquial ones
+  - create minimap of different latinizations
+
