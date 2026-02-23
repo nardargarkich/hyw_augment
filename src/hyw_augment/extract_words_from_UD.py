@@ -207,7 +207,7 @@ def extract_function_words(
     min_freq: int = 3,
 ) -> dict:
     """
-    Extract function words missing from the lexicon and return Nayiri-format JSON.
+    Extract words missing from the lexicon and return Nayiri-format JSON.
 
     Args:
         treebank: Parsed UD treebank (all splits)
@@ -341,7 +341,7 @@ def extract_function_words(
                 "(pronouns, copula, auxiliaries, postpositions, determiners, etc.)."
             ),
             "source": "UD_Western_Armenian-ArmTDP",
-            "generatedBy": "hyw_augment.extract_function_words",
+            "generatedBy": "hyw_augment.extract_words_from_UD.py",
             "minFrequency": min_freq,
             "numLexemes": len(lexemes),
             "numInflections": len(inflection_registry),
@@ -355,7 +355,7 @@ def extract_function_words(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Extract function words from UD treebank into Nayiri-format JSON"
+        description="Extract words from UD treebank into Nayiri-format JSON"
     )
     parser.add_argument(
         "--conllu",

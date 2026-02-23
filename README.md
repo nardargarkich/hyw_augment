@@ -111,7 +111,7 @@ extract mismatched words between UD and Nayiri
 python -m hyw_augment.extract_words_from_UD \
     --conllu data/*.conllu \
     --nayiri data/nayiri-armenian-lexicon-2026-02-15-v1.json \
-    --output data/function-words.json \
+    --output data/extracted-words.json \
     --indent \
     --min-freq 3 # can adapt up or down
 ```
