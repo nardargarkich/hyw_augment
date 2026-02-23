@@ -120,7 +120,7 @@ for sent in tb:
 ## Current questions
 
 - What sort of word is է and similar? An auxilary? A function word? A suffix? It is obviously all of these, but how best to integrate? Need to make list of function words separate from words missing from Nayiri lexicon in general (lexicon is stated on project page to be incomplete/rolling release).
-- Somewhat similarly: currently this is working on inflectional morphology, ie we're taking lemmas and giving them word forms. But Armenian is (at least somewhat) agglutinative. How to handle derivational morphology (ie building words from word-bits)? In present setup from Nayiri, "անհատ" is one lexeme/lemma; but it's also ան = without հատ = one discrete unit, and native speakers would recognize this pattern. A parser should too. Quick'n'dirty step one is to do stripping based on set prefix/suffix list: need to make. Future steps lead towards a finite state transducer type thing, which will take... a while.
+- Somewhat similarly: currently this is working on inflectional morphology, ie we're taking lemmas and giving them word forms. But Armenian is (at least somewhat) agglutinative. How to handle derivational morphology (ie building words from word-bits)? For example, in present setup from Nayiri, "անհատ" is one lexeme/lemma; but it's also ան = without հատ = one discrete unit, and native speakers would recognize this pattern. A parser should too, and this does not. Quick'n'dirty step one is to do stripping based on set prefix/suffix list: need to make. And then rules for how the words sometimes change when these attach. Future steps may lead towards a finite state transducer type thing, which is a bigger project.
 
 
 ## Grab-bag of small(er) TODOs/stretch goals/related project ideas:
