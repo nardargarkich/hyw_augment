@@ -1,23 +1,21 @@
 # hyw_augment
 
-## Project to augment LLMs for better Western Armenian language parsing
+## Project to wire together Western Armenian NLP tools for better language processing 
 
 ## WARNING! Still very much in development, many known issues
 
 ## What this is
 
-A morphological augmentation layer for Western Armenian (hyw) LLMs. The goal is
-to improve LLM output quality in Western Armenian by giving the model access to
-structured linguistic data at inference time, rather than fine-tuning. (Fine tuning may come later.)
+A morphological augmentation layer for Western Armenian (hyw) — originally targeting LLMs, probably useful for analysis generally. The goal the project started with was/is to improve LLM output quality in Western Armenian by giving the model access to structured linguistic data at inference time, rather than fine-tuning. (Fine tuning may come later.)
 
-This is **model-agnostic** — it sits between the user and any LLM (currently
+This is **model-agnostic**, including human-as-"model" — it sits between a regular user and any LLM (currently
 targeting Ministral 14B via Ollama, but portable to anything).
 
 ## Why
 
 - No conversational Western Armenian LLM exists yet
-- Eastern Armenian has [HyGPT](https://huggingface.co/Gen2B/HyGPT-10b) and [ArmenianGPT](https://huggingface.co/ArmGPT/ArmenianGPT-0.1-12B); Western has nothing; even given that it should be easier to get an Eastern Armenian-speaking LLM to figure out Western Armenian, it would be nice to get up and running with higher-parameter models
-- The NLP infrastructure has a lot of parts already built (UD treebank, Nayiri lexicon, DALiH project, Apertium Western Armenian Transducer) but it's not currently connected to conversational generation
+- Eastern Armenian has [HyGPT](https://huggingface.co/Gen2B/HyGPT-10b) and [ArmenianGPT](https://huggingface.co/ArmGPT/ArmenianGPT-0.1-12B); Western is currently too resource-poor to build like that; even given that it should be easier to get an Eastern Armenian-speaking LLM to figure out Western Armenian, it would be nice to get up and running with higher-parameter models
+- The NLP infrastructure has a lot of parts already built (UD treebank, Nayiri lexicon, DALiH project, Apertium Western Armenian Transducer) but it's not currently connected
 - An augmentation layer is portable between models and immediately useful
 
 ## Data sources
