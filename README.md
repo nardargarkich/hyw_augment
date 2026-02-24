@@ -47,7 +47,7 @@ targeting Ministral 14B via Ollama, but portable to anything).
 * Built with HFST/lexd/twol, GPL-3.0
 * Key people: Hossep Dolatian (Stony Brook University), Daniel Swanson (Indiana University), Jonathan Washington (Swarthmore College)
 * Paper: Dolatian et al. (2022), "A Free/Open-Source Morphological Transducer for Western Armenian" — presented at DigitAm @LREC 2022
-* Integration in progress — using as additional analyzer backend alongside Nayiri lexicon
+* Integrated as fallback analyzer backend alongside Nayiri lexicon via `--apertium` CLI flag
 
 ## Architecture
 
@@ -55,11 +55,16 @@ targeting Ministral 14B via Ollama, but portable to anything).
 src/hyw_augment/
 ├── __init__.py               # Package exports
 ├── __main__.py               # python -m hyw_augment
-├── cli.py                    # CLI runner
-├── extract_words_from_UD.py  # extracts unmatched words list from UD database in Nayiri format, with the goal of grabbing function words
+├── cli.py                    # CLI runner (uses MorphEngine)
+├── engine.py                 # MorphEngine — unified backend orchestration + config
 ├── conllu.py                 # CoNLL-U treebank parser
 ├── nayiri.py                 # Nayiri lexicon parser + morphological lookup
+├── apertium.py               # Apertium transducer wrapper (persistent hfst-lookup)
+├── derivation.py             # Derivational morphology (prefix/suffix stripping) [WIP]
+├── extract_words_from_UD.py  # extracts unmatched words from UD in Nayiri format
 └── coverage.py               # Cross-reference treebank ↔ lexicon
+
+hyw_augment.toml              # Default config (paths to data, backends)
 ```
 
 ### conllu.py
@@ -74,31 +79,61 @@ src/hyw_augment/
 - `lex.generate("lemma", case=..., number=...)` → list of surface forms
 - `lex.is_valid_form("form")` → bool
 
+### apertium.py
+- `ApertiumAnalyzer(apertium_dir)` — wraps `hfst-lookup` with the compiled transducer
+- `apt.analyze("form")` → list of ApertiumAnalysis (form → lemma + apertium tags)
+- `apt.analyze_batch(["form1", "form2", ...])` → dict of form → analyses (single subprocess call)
+- `apt.generate("lemma", ["n", "pl", "abl", "def"])` → list of surface forms
+- `ApertiumAnalysis` is duck-type compatible with `MorphAnalysis` (.lemma, .pos, .description_en, .case, .number, etc.)
+- Apertium tag set mapped to human-readable labels and to Nayiri/UD-compatible feature names
+
+### engine.py
+- `MorphEngine.from_config("hyw_augment.toml")` — loads everything from config
+- `engine.analyze("form")` → list of AnalysisResult (first backend that hits)
+- `engine.analyze_all("form")` → dict of backend name → results (every backend)
+- `engine.analyze_batch(forms)` → efficient bulk analysis with automatic fallback
+- `AnalysisResult` wraps any backend's analysis with `.source` tag + delegates `.lemma`, `.pos`, etc.
+
 ### coverage.py
 - `check_coverage(treebank, lexicon)` → CoverageReport
 - Reports: % found, lemma agreement, POS agreement, missing forms
 
 ## Usage
 
+### Config
+
+Create `hyw_augment.toml` in the project root (one is included):
+```toml
+[nayiri]
+paths = ["data/nayiri-armenian-lexicon-2026-02-15-v1.json", "data/extracted-words.json"]
+
+[apertium]
+dir = "/path/to/apertium-hyw"
+
+[treebank]
+paths = ["data/hyw_armtdp-ud-train.conllu", "data/hyw_armtdp-ud-dev.conllu", "data/hyw_armtdp-ud-test.conllu"]
+```
+
+With a config file present, the CLI loads everything automatically — no flags needed.
+
 ### CLI
 
-Analyze a word — give it a surface form, get back all possible lemmas and grammatical analyses as currently documented
-`bashpython -m hyw_augment.cli --nayiri data/*.json --analyze "արշաւը"`
+Analyze a word (uses all configured backends):
+`python -m hyw_augment.cli --analyze "WORD"`
 
-Generate forms from a lemma — go the other direction, give it a dictionary form and see all its inflections
-`bashpython -m hyw_augment.cli --nayiri data/*.json --generate "արշաւ"`
+Generate forms from a lemma:
+`python -m hyw_augment.cli --generate "LEMMA"`
 
-Checking coverage between current datasets
-`python -m hyw_augment.cli --conllu data/*.conllu --nayiri data/nayiri-armenian-lexicon-2026-02-15-v1.json data/function-words.json --coverage`
+Coverage check:
+`python -m hyw_augment.cli --coverage`
 
-Finding Nayiri/UD dataset mismatches
-`python -m hyw_augment --conllu data/*.conllu --nayiri data/nayiri*.json --coverage --mismatches data/mismatches.tsv`
+Coverage with mismatch export:
+`python -m hyw_augment.cli --coverage --mismatches data/mismatches.tsv`
 
-Finding dataset mismatches w/added wordlists
-`python -m hyw_augment --conllu data/*.conllu --nayiri data/*.json --coverage --mismatches data/mismatches-ext.tsv`
+Override config with explicit flags:
+`python -m hyw_augment.cli --nayiri data/*.json --apertium /path/to/apertium-hyw --analyze "WORD"`
 
-extract mismatched words between UD and Nayiri
-(first pass for building function words list)
+Extract mismatched words between UD and Nayiri (first pass for building function words list):
 ```
 python -m hyw_augment.extract_words_from_UD \
     --conllu data/*.conllu \
@@ -108,30 +143,41 @@ python -m hyw_augment.extract_words_from_UD \
     --min-freq 3 # can adapt up or down
 ```
 
-### Optional: Apertium transducer (NOT YET IMPLEMENTED)
+### Apertium transducer setup
 
 For expanded morphological coverage, install the Apertium Western Armenian transducer:
 
 1. Install system packages: `hfst`, `lttoolbox`, `apertium`, `vislcg3`
 2. Clone and build `lexd` : https://github.com/apertium/lexd
 3. Clone and build: https://github.com/apertium/apertium-hyw
-4. Pass the path: `--apertium /path/to/apertium-hyw`
+4. Set the `dir` in `hyw_augment.toml` under `[apertium]`
 
 ### Python
 
-Treebank exploration in Python
-```
+```python
+from hyw_augment import MorphEngine
+
+# Load from config
+engine = MorphEngine.from_config()
+
+# Analyze — first backend that hits
+results = engine.analyze("WORD")
+for r in results:
+    print(r.source, r.lemma, r.pos, r.description_en)
+
+# Compare all backends
+all_results = engine.analyze_all("WORD")
+for source, results in all_results.items():
+    print(f"--- {source} ---")
+    for r in results:
+        print(f"  {r.lemma} [{r.pos}]")
+
+# Treebank exploration
 from hyw_augment import Treebank
-
 tb = Treebank.from_dir("data/")
-tb.vocab()           # lemma → set of observed surface forms
+tb.vocab()                        # lemma -> set of observed surface forms
 tb.pos_distribution()
-tb.deprel_distribution()  # what dependency relations appear and how often
-
-for sent in tb:
-    root = sent.root()           # the main verb/predicate
-    nouns = sent.by_upos("NOUN", "PROPN")  # filter by POS
-    # each token has .form, .lemma, .upos, .feats, .deprel, .head
+tb.deprel_distribution()
 ```
 
 

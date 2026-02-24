@@ -1,0 +1,18 @@
+# hyw_augment configuration
+# CLI flags override these values; paths are relative to this file's directory.
+
+[nayiri]
+paths = [
+    "data/nayiri-armenian-lexicon-2026-02-15-v1.json",
+    "data/extracted-words.json",
+]
+
+[apertium]
+dir = "/home/van/ml-work/arm_data/apertium-hyw"
+
+[treebank]
+paths = [
+    "data/hyw_armtdp-ud-train.conllu",
+    "data/hyw_armtdp-ud-dev.conllu",
+    "data/hyw_armtdp-ud-test.conllu",
+]
