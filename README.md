@@ -146,4 +146,4 @@ for sent in tb:
   - clean up code
   - find/make/grab more texts, especially colloquial ones
   - create minimap of different latinizations
-
+  - use actual branches instead of doing active development inside of main (sorry -- wanted to get this off the ground fast, and show work to anyone interested!)
