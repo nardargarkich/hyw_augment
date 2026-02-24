@@ -8,7 +8,7 @@
 
 A morphological augmentation layer for Western Armenian (hyw) LLMs. The goal is
 to improve LLM output quality in Western Armenian by giving the model access to
-structured linguistic data at inference time, rather than fine-tuning. (Fine tuning may come later. Currently early stage.)
+structured linguistic data at inference time, rather than fine-tuning. (Fine tuning may come later.)
 
 This is **model-agnostic** — it sits between the user and any LLM (currently
 targeting Ministral 14B via Ollama, but portable to anything).
@@ -17,8 +17,7 @@ targeting Ministral 14B via Ollama, but portable to anything).
 
 - No conversational Western Armenian LLM exists yet
 - Eastern Armenian has [HyGPT](https://huggingface.co/Gen2B/HyGPT-10b) and [ArmenianGPT](https://huggingface.co/ArmGPT/ArmenianGPT-0.1-12B); Western has nothing; even given that it should be easier to get an Eastern Armenian-speaking LLM to figure out Western Armenian, it would be nice to get up and running with higher-parameter models
-- The NLP infrastructure is arriving (UD treebank, Nayiri lexicon, DALiH project)
-  but nobody has connected it to conversational generation
+- The NLP infrastructure has a lot of parts already built (UD treebank, Nayiri lexicon, DALiH project, Apertium Western Armenian Transducer) but it's not currently connected to conversational generation
 - An augmentation layer is portable between models and immediately useful
 
 ## Data sources
@@ -39,6 +38,16 @@ targeting Ministral 14B via Ollama, but portable to anything).
 - JSON format, hierarchical: lexeme → lemma → word forms → inflection IDs
 - License: CC BY 4.0
 - Key person: Serouj Ourishian
+
+### Apertium Western Armenian Transducer
+
+* Source: https://github.com/apertium/apertium-hyw
+* A full morphological transducer with 75K lemma lexicon, ~90%+ naive coverage
+* Handles inflectional morphology and some productive derivation
+* Built with HFST/lexd/twol, GPL-3.0
+* Key people: Hossep Dolatian (Stony Brook University), Daniel Swanson (Indiana University), Jonathan Washington (Swarthmore College)
+* Paper: Dolatian et al. (2022), "A Free/Open-Source Morphological Transducer for Western Armenian" — presented at DigitAm @LREC 2022
+* Integration in progress — using as additional analyzer backend alongside Nayiri lexicon
 
 ## Architecture
 
@@ -99,6 +108,15 @@ python -m hyw_augment.extract_words_from_UD \
     --min-freq 3 # can adapt up or down
 ```
 
+### Optional: Apertium transducer (NOT YET IMPLEMENTED)
+
+For expanded morphological coverage, install the Apertium Western Armenian transducer:
+
+1. Install system packages: `hfst`, `lttoolbox`, `apertium`, `vislcg3`
+2. Clone and build `lexd` : https://github.com/apertium/lexd
+3. Clone and build: https://github.com/apertium/apertium-hyw
+4. Pass the path: `--apertium /path/to/apertium-hyw`
+
 ### Python
 
 Treebank exploration in Python
@@ -120,7 +138,7 @@ for sent in tb:
 ## Current questions
 
 - What sort of word is է and similar? An auxilary? A function word? A suffix? It is obviously all of these, but how best to integrate? Need to make list of function words separate from words missing from Nayiri lexicon in general (lexicon is stated on project page to be incomplete/rolling release).
-- Somewhat similarly: currently this is working on inflectional morphology, ie we're taking lemmas and giving them word forms. But Armenian is (at least somewhat) agglutinative. How to handle derivational morphology (ie building words from word-bits)? For example, in present setup from Nayiri, "անհատ" is one lexeme/lemma; but it's also ան = without հատ = one discrete unit, and native speakers would recognize this pattern. A parser should too, and this does not. Quick'n'dirty step one is to do stripping based on set prefix/suffix list: need to make. And then rules for how the words sometimes change when these attach. Future steps may lead towards a finite state transducer type thing, which is a bigger project.
+- Somewhat similarly: currently this is working on inflectional morphology, ie we're taking lemmas and giving them word forms. But Armenian is (at least somewhat) agglutinative. How to handle derivational morphology (ie building words from word-bits)? For example, in present setup from Nayiri, "անհատ" is one lexeme/lemma; but it's also ան = without հատ = one discrete unit, and native speakers would recognize this pattern. A parser should too, and this does not. Quick'n'dirty step one is to do stripping based on set prefix/suffix list: need to make. And then rules for how the words sometimes change when these attach. Future steps may lead towards a cleaner, more built out finite state transducer.
 
 
 ## Grab-bag of small(er) TODOs/stretch goals/related project ideas:
