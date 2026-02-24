@@ -47,7 +47,7 @@ targeting Ministral 14B via Ollama, but portable to anything).
 * Built with HFST/lexd/twol, GPL-3.0
 * Key people: Hossep Dolatian (Stony Brook University), Daniel Swanson (Indiana University), Jonathan Washington (Swarthmore College)
 * Paper: Dolatian et al. (2022), "A Free/Open-Source Morphological Transducer for Western Armenian" — presented at DigitAm @LREC 2022
-* Integrated as fallback analyzer backend alongside Nayiri lexicon via `--apertium` CLI flag
+* Integrated as fallback analyzer backend alongside Nayiri lexicon (configured in `hyw_augment.toml`)
 
 ## Architecture
 
@@ -95,8 +95,9 @@ hyw_augment.toml              # Default config (paths to data, backends)
 - `AnalysisResult` wraps any backend's analysis with `.source` tag + delegates `.lemma`, `.pos`, etc.
 
 ### coverage.py
-- `check_coverage(treebank, lexicon)` → CoverageReport
-- Reports: % found, lemma agreement, POS agreement, missing forms
+- `check_coverage(treebank, lexicon, apertium=apt)` → CoverageReport
+- Nayiri first pass, then batches all misses through Apertium in one call
+- Reports: Nayiri found / Apertium rescued / still missing, per-POS breakdown, lemma + POS agreement
 
 ## Usage
 
