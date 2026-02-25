@@ -16,3 +16,6 @@ paths = [
     "data/hyw_armtdp-ud-dev.conllu",
     "data/hyw_armtdp-ud-test.conllu",
 ]
+
+[hyspell]
+dir = "/home/van/ml-work/arm_data/HySpell_3.0.1/Dictionaries"

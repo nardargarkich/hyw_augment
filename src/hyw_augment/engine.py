@@ -80,6 +80,9 @@ class MorphEngine:
     def __init__(self):
         self.backends: list[tuple[str, Any]] = []  # (name, backend)
         self.treebank = None  # Treebank | None
+        self.spellchecker = None  # SpellChecker | None
+        self.orthography = None   # OrthographyConverter | None
+        self.glossary = None      # Glossary | None
 
     # ── Construction helpers ─────────────────────────────────────────────
 
@@ -100,6 +103,26 @@ class MorphEngine:
         apt = ApertiumAnalyzer(apertium_dir)
         if apt.available:
             self.backends.append(("apertium", apt))
+
+    def add_spellcheck(self, dict_dir: str | Path) -> None:
+        """Add a Hunspell spell checker (HySpell hy-c dictionary)."""
+        from hyw_augment.spelling import SpellChecker
+
+        sc = SpellChecker(dict_dir)
+        if sc.available:
+            self.spellchecker = sc
+
+    def add_orthography(self, dict_dir: str | Path) -> None:
+        """Add an orthography converter (Reformed -> Classical)."""
+        from hyw_augment.orthography import OrthographyConverter
+
+        self.orthography = OrthographyConverter(dict_dir)
+
+    def add_glossary(self, path: str | Path) -> None:
+        """Add a glossary (SmallArmDic definitions)."""
+        from hyw_augment.glossary import Glossary
+
+        self.glossary = Glossary.from_file(path)
 
     def load_treebank(self, *paths: str | Path) -> None:
         """Load UD treebank files."""
@@ -151,6 +174,19 @@ class MorphEngine:
             resolved = _resolve_config_paths(tb_paths, base_dir)
             if resolved:
                 engine.load_treebank(*resolved)
+
+        # HySpell (spell checker, orthography converter, glossary)
+        hyspell_cfg = cfg.get("hyspell", {})
+        hyspell_dir = hyspell_cfg.get("dir")
+        if hyspell_dir:
+            hp = Path(hyspell_dir)
+            if not hp.is_absolute():
+                hp = base_dir / hp
+            engine.add_spellcheck(hp / "Dictc")
+            engine.add_orthography(hp)
+            glossary_path = hp / "SmallArmDic.txt"
+            if glossary_path.exists():
+                engine.add_glossary(glossary_path)
 
         return engine
 
@@ -213,26 +249,87 @@ class MorphEngine:
 
         return results
 
+    # ── Validation & spelling ─────────────────────────────────────────────
+
+    def validate(self, form: str) -> bool:
+        """Check if a word is valid in any backend or the spell checker.
+
+        Tries (in order): Nayiri form_index, Apertium is_known, Hunspell check.
+        """
+        for name, backend in self.backends:
+            if name == "nayiri":
+                if backend.is_valid_form(form):
+                    return True
+            elif name == "apertium":
+                if backend.is_known(form):
+                    return True
+        if self.spellchecker is not None:
+            return self.spellchecker.check(form)
+        return False
+
+    def suggest(self, form: str) -> list[str]:
+        """Get spelling suggestions for an invalid word."""
+        if self.spellchecker is not None:
+            return self.spellchecker.suggest(form)
+        return []
+
+    def convert_reformed(self, text: str) -> str:
+        """Convert Reformed-orthography text to Classical."""
+        if self.orthography is not None:
+            return self.orthography.convert_text(text)
+        return text
+
+    def detect_reformed(self, text: str) -> list[tuple[str, str]]:
+        """Find Reformed-orthography words in text.
+
+        Returns list of (reformed, classical) pairs.
+        """
+        if self.orthography is not None:
+            return self.orthography.detect_reformed_words(text)
+        return []
+
+    def lookup_definition(self, word: str):
+        """Look up a word's definition in the glossary.
+
+        Returns list of GlossaryEntry or None.
+        """
+        if self.glossary is not None:
+            return self.glossary.lookup(word)
+        return None
+
     # ── Introspection ────────────────────────────────────────────────────
 
     def summary(self) -> str:
         lines = [f"MorphEngine with {len(self.backends)} backend(s):"]
         for name, backend in self.backends:
             lines.append(f"  [{name}]")
-            # indent each backend's own summary
             for sub_line in backend.summary().split("\n"):
                 lines.append(f"    {sub_line}")
         if self.treebank:
             lines.append(f"  [treebank]")
             for sub_line in self.treebank.summary().split("\n"):
                 lines.append(f"    {sub_line}")
+        if self.spellchecker:
+            lines.append(f"  [spellcheck]")
+            for sub_line in self.spellchecker.summary().split("\n"):
+                lines.append(f"    {sub_line}")
+        if self.orthography:
+            lines.append(f"  [orthography]")
+            for sub_line in self.orthography.summary().split("\n"):
+                lines.append(f"    {sub_line}")
+        if self.glossary:
+            lines.append(f"  [glossary]")
+            for sub_line in self.glossary.summary().split("\n"):
+                lines.append(f"    {sub_line}")
         return "\n".join(lines)
 
     def close(self) -> None:
-        """Clean up backends that hold resources (e.g. Apertium subprocess)."""
+        """Clean up backends that hold resources (e.g. subprocesses)."""
         for _name, backend in self.backends:
             if hasattr(backend, "close"):
                 backend.close()
+        if self.spellchecker is not None:
+            self.spellchecker.close()
 
     def __enter__(self) -> MorphEngine:
         return self

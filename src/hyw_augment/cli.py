@@ -66,13 +66,34 @@ def main():
         metavar="FILE",
         help="Write full mismatch list to a TSV file (use with --coverage)",
     )
+    parser.add_argument(
+        "--hyspell",
+        metavar="DIR",
+        help="Path to HySpell Dictionaries directory (overrides config)",
+    )
+    parser.add_argument(
+        "--validate",
+        help="Check if a word is valid",
+    )
+    parser.add_argument(
+        "--suggest",
+        help="Get spelling suggestions for a word",
+    )
+    parser.add_argument(
+        "--convert",
+        help="Convert Reformed-orthography text to Classical",
+    )
+    parser.add_argument(
+        "--define",
+        help="Look up a word's definition",
+    )
     args = parser.parse_args()
 
     # ── Build engine ─────────────────────────────────────────────────────
 
     from hyw_augment.engine import MorphEngine
 
-    has_explicit_flags = args.nayiri or args.apertium or args.conllu
+    has_explicit_flags = args.nayiri or args.apertium or args.conllu or args.hyspell
 
     if has_explicit_flags:
         # Explicit flags: build engine manually (flags override config)
@@ -83,6 +104,13 @@ def main():
             engine.add_apertium(args.apertium)
         if args.conllu:
             engine.load_treebank(*args.conllu)
+        if args.hyspell:
+            hp = Path(args.hyspell)
+            engine.add_spellcheck(hp / "Dictc")
+            engine.add_orthography(hp)
+            glossary_path = hp / "SmallArmDic.txt"
+            if glossary_path.exists():
+                engine.add_glossary(glossary_path)
     else:
         # Use config file
         config_path = Path(args.config) if args.config else _find_default_config()
@@ -164,6 +192,72 @@ def main():
             if args.mismatches:
                 report.write_mismatches(Path(args.mismatches))
                 print(f"\nMismatches written to {args.mismatches}")
+
+        # ── Validate ────────────────────────────────────────────────────
+
+        if args.validate:
+            valid = engine.validate(args.validate)
+            if valid:
+                # Report which source confirmed it
+                sources = []
+                for name, backend in engine.backends:
+                    if name == "nayiri" and backend.is_valid_form(args.validate):
+                        sources.append("nayiri")
+                    elif name == "apertium" and backend.is_known(args.validate):
+                        sources.append("apertium")
+                if engine.spellchecker and engine.spellchecker.check(args.validate):
+                    sources.append("hunspell")
+                print(f"'{args.validate}' is VALID (confirmed by: {', '.join(sources)})")
+            else:
+                suggestions = engine.suggest(args.validate)
+                if suggestions:
+                    print(f"'{args.validate}' is INVALID. Suggestions: {', '.join(suggestions)}")
+                else:
+                    print(f"'{args.validate}' is INVALID (no suggestions available)")
+            print()
+
+        # ── Suggest ─────────────────────────────────────────────────────
+
+        if args.suggest:
+            suggestions = engine.suggest(args.suggest)
+            if suggestions:
+                print(f"Suggestions for '{args.suggest}': {', '.join(suggestions)}")
+            else:
+                if engine.spellchecker is None:
+                    print("Spell checker not available (hunspell not configured).")
+                else:
+                    print(f"No suggestions for '{args.suggest}'.")
+            print()
+
+        # ── Convert ─────────────────────────────────────────────────────
+
+        if args.convert:
+            result = engine.convert_reformed(args.convert)
+            if result != args.convert:
+                print(f"Converted: {result}")
+                reformed = engine.detect_reformed(args.convert)
+                if reformed:
+                    print("Changed words:")
+                    for ref, cls in reformed:
+                        print(f"  {ref} -> {cls}")
+            else:
+                print(f"No Reformed-orthography words detected.")
+            print()
+
+        # ── Define ──────────────────────────────────────────────────────
+
+        if args.define:
+            entries = engine.lookup_definition(args.define)
+            if entries:
+                print(f"Definition of '{args.define}':")
+                for e in entries:
+                    print(f"  [{e.pos}] {e.definition}")
+            else:
+                if engine.glossary is None:
+                    print("Glossary not available (HySpell not configured).")
+                else:
+                    print(f"'{args.define}' not found in glossary.")
+            print()
 
 
 if __name__ == "__main__":

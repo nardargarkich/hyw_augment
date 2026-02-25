@@ -2,7 +2,7 @@
 
 ## Project to wire together Western Armenian NLP tools for better language processing 
 
-## WARNING! Still very much in development, many known issues
+## WARNING! Still very much in development, many known (and unknown!) issues
 
 ## What this is
 
@@ -13,8 +13,11 @@ This is **model-agnostic**, including human-as-"model" — it sits between a reg
 ## Why
 
 - The NLP infrastructure has a lot of parts already built (UD treebank, Nayiri Lexicon, DALiH project, Apertium Western Armenian Transducer, Nayiri Codex) but it's not currently connected
+
 - An augmentation layer is portable between paradigms and immediately useful
+
 - With regard to LLMs specifically, no conversational Western Armenian LLM exists yet, and it could be useful to supplement other language resources
+
 - Eastern Armenian has [HyGPT](https://huggingface.co/Gen2B/HyGPT-10b) and [ArmenianGPT](https://huggingface.co/ArmGPT/ArmenianGPT-0.1-12B); training on Western Corpus will take time; even given that it should be easier to get an Eastern Armenian-speaking LLM to figure out Western Armenian, it would be nice to get up and running with higher-parameter models
 
 ## Data sources
@@ -46,6 +49,17 @@ This is **model-agnostic**, including human-as-"model" — it sits between a reg
 * Paper: Dolatian et al. (2022), "A Free/Open-Source Morphological Transducer for Western Armenian" — presented at DigitAm @LREC 2022
 * Integrated as fallback analyzer backend alongside Nayiri lexicon (configured in `hyw_augment.toml`)
 
+### HySpell Armenian Spell Checker
+
+* Source: https://github.com/hyspell/HySpell_3.0.1
+* Hunspell dictionary for Armenian: 160K stems, ~200 affix rules, 126 replacement/suggestion rules
+* Separate dictionaries for Classical (Western) and Reformed (Eastern) orthography
+* Includes Reformed↔Classical orthography conversion maps (160K word-level mappings + suffix rules)
+* Includes SmallArmDic: 19K-entry Armenian explanatory dictionary with POS and definitions
+* License: MIT
+* Key person: Haro Mherian, Ph.D.
+* Integrated for spell checking, orthography conversion, and glossary lookup (configured in `hyw_augment.toml`)
+
 ## Architecture
 
 ```
@@ -57,8 +71,11 @@ src/hyw_augment/
 ├── conllu.py                 # CoNLL-U treebank parser
 ├── nayiri.py                 # Nayiri lexicon parser + morphological lookup
 ├── apertium.py               # Apertium transducer wrapper (persistent hfst-lookup)
+├── spelling.py               # Hunspell spell checker wrapper (persistent hunspell pipe)
+├── orthography.py            # Reformed ↔ Classical orthography conversion
+├── glossary.py               # Armenian explanatory dictionary (SmallArmDic)
 ├── derivation.py             # Derivational morphology (prefix/suffix stripping) [WIP]
-├── extract_words_from_UD.py  # extracts unmatched words from UD in Nayiri format
+├── extract_words_from_UD.py  # extracts unmatched words from UD in Nayiri format (potentially now unnecessary, or just duplicative)
 └── coverage.py               # Cross-reference treebank ↔ lexicon
 
 hyw_augment.toml              # Default config (paths to data, backends)
@@ -84,11 +101,37 @@ hyw_augment.toml              # Default config (paths to data, backends)
 - `ApertiumAnalysis` is duck-type compatible with `MorphAnalysis` (.lemma, .pos, .description_en, .case, .number, etc.)
 - Apertium tag set mapped to human-readable labels and to Nayiri/UD-compatible feature names
 
+### spelling.py
+- `SpellChecker(dict_dir)` — wraps the `hunspell` CLI in persistent pipe mode (same pattern as Apertium)
+- `sc.check("form")` → bool (is this a valid word?)
+- `sc.suggest("form")` → list of suggested corrections
+- `sc.check_and_suggest("form")` → (bool, list) combined check + suggest
+- `sc.check_batch(forms)` / `sc.suggest_batch(forms)` → batch operations
+- Uses HySpell's Classical Armenian dictionary (hy-c.aff + hy-c.dic, 160K stems)
+
+### orthography.py
+- `OrthographyConverter(dict_dir)` — loads HySpell's Reformed↔Classical mapping tables
+- `conv.convert_word("reformed_form")` → Classical equivalent
+- `conv.convert_text("reformed text")` → full text conversion (preserves whitespace/punctuation)
+- `conv.is_reformed("form")` → True if word has a different Classical spelling
+- `conv.detect_reformed_words("text")` → list of (reformed, classical) pairs found
+- Uses lexicon map (161K entries) for base forms, suffix rules (159 rules) for inflected forms
+
+### glossary.py
+- `Glossary.from_file(path)` — loads SmallArmDic.txt (19K Armenian headwords)
+- `glossary.lookup("word")` → list of GlossaryEntry with `.pos`, `.definition`, `.is_transitive`
+- POS tags normalized from Armenian abbreviations (գ.→NOUN, նրգ.→VERB_TR, etc.)
+
 ### engine.py
 - `MorphEngine.from_config("hyw_augment.toml")` — loads everything from config
 - `engine.analyze("form")` → list of AnalysisResult (first backend that hits)
 - `engine.analyze_all("form")` → dict of backend name → results (every backend)
 - `engine.analyze_batch(forms)` → efficient bulk analysis with automatic fallback
+- `engine.validate("form")` → bool (checks Nayiri, Apertium, and Hunspell)
+- `engine.suggest("form")` → spelling suggestions via Hunspell
+- `engine.convert_reformed("text")` → Reformed-to-Classical orthography conversion
+- `engine.detect_reformed("text")` → find Reformed-orthography words
+- `engine.lookup_definition("word")` → glossary entries with POS + definitions
 - `AnalysisResult` wraps any backend's analysis with `.source` tag + delegates `.lemma`, `.pos`, etc.
 
 ### coverage.py
@@ -110,9 +153,12 @@ dir = "/path/to/apertium-hyw"
 
 [treebank]
 paths = ["data/hyw_armtdp-ud-train.conllu", "data/hyw_armtdp-ud-dev.conllu", "data/hyw_armtdp-ud-test.conllu"]
+
+[hyspell]
+dir = "/path/to/HySpell_3.0.1/Dictionaries"
 ```
 
-With a config file present, the CLI loads everything automatically — no flags needed.
+With a config file present, the CLI loads everything automatically — no flags needed. All sections are optional.
 
 ### CLI
 
@@ -122,6 +168,18 @@ Analyze a word (uses all configured backends):
 Generate forms from a lemma:
 `python -m hyw_augment.cli --generate "LEMMA"`
 
+Validate a word (checks Nayiri, Apertium, and Hunspell):
+`python -m hyw_augment.cli --validate "WORD"`
+
+Get spelling suggestions:
+`python -m hyw_augment.cli --suggest "MISSPELLED_WORD"`
+
+Convert Reformed (Eastern) orthography to Classical (Western):
+`python -m hyw_augment.cli --convert "REFORMED_TEXT"`
+
+Look up a word's definition:
+`python -m hyw_augment.cli --define "WORD"`
+
 Coverage check:
 `python -m hyw_augment.cli --coverage`
 
@@ -130,6 +188,7 @@ Coverage with mismatch export:
 
 Override config with explicit flags:
 `python -m hyw_augment.cli --nayiri data/*.json --apertium /path/to/apertium-hyw --analyze "WORD"`
+`python -m hyw_augment.cli --hyspell /path/to/Dictionaries --validate "WORD"`
 
 Extract mismatched words between UD and Nayiri (first pass for building function words list):
 ```
@@ -141,7 +200,9 @@ python -m hyw_augment.extract_words_from_UD \
     --min-freq 3 # can adapt up or down
 ```
 
-### Apertium transducer setup
+### External tool setup
+
+#### Apertium transducer (morphological analysis/generation)
 
 For expanded morphological coverage, install the Apertium Western Armenian transducer:
 
@@ -149,6 +210,14 @@ For expanded morphological coverage, install the Apertium Western Armenian trans
 2. Clone and build `lexd` (available in `apertium-tools`, but not standard `apertium`) : https://github.com/apertium/lexd
 3. Clone and build: https://github.com/apertium/apertium-hyw
 4. Set the `dir` in `hyw_augment.toml` under `[apertium]`
+
+#### HySpell (spell checking, orthography conversion, glossary)
+
+1. Install `hunspell` (usually available via system package manager; e.g. `pacman -S hunspell` on Arch, `apt install hunspell` on Debian/Ubuntu)
+2. Clone: https://github.com/hyspell/HySpell_3.0.1
+3. Set `dir` in `hyw_augment.toml` under `[hyspell]` to the `Dictionaries/` subdirectory
+
+The spell checker requires the `hunspell` binary in PATH. The orthography converter and glossary are pure Python and work without it.
 
 ### Python
 
@@ -170,6 +239,23 @@ for source, results in all_results.items():
     for r in results:
         print(f"  {r.lemma} [{r.pos}]")
 
+# Validate a word (checks all backends + spell checker)
+engine.validate("WORD")  # True/False
+
+# Spelling suggestions
+engine.suggest("MISSPELLED_WORD")  # ["suggestion1", "suggestion2", ...]
+
+# Convert Reformed (Eastern) orthography to Classical (Western)
+engine.convert_reformed("reformed text")  # "classical text"
+
+# Detect Reformed words in text
+engine.detect_reformed("mixed text")  # [("reformed_word", "classical_word"), ...]
+
+# Look up definitions
+entries = engine.lookup_definition("WORD")
+for e in entries:
+    print(e.pos, e.definition)  # NOUN, Armenian definition text
+
 # Treebank exploration
 from hyw_augment import Treebank
 tb = Treebank.from_dir("data/")
@@ -181,8 +267,11 @@ tb.deprel_distribution()
 
 ## Current questions
 
-- What sort of word is է and similar? An auxilary? A function word? A suffix? It is obviously all of these, but how best to integrate? Need to make list of function words separate from words missing from Nayiri lexicon in general (lexicon is stated on project page to be incomplete/rolling release). currently in progress -- have extracted word list. also need to check to see if this is redundant given apertium integration, or if would be better served by extracting these from there.
-- Somewhat similarly: currently this is working on inflectional morphology, ie we're taking lemmas and giving them word forms. But Armenian is (at least somewhat) agglutinative. How to handle derivational morphology (ie building words from word-bits)? For example, in present setup from Nayiri, "անհատ" is one lexeme/lemma; but it's also ան = without հատ = one discrete unit, and native speakers would recognize this pattern. A parser should too, and this does not. Quick'n'dirty step one is to do stripping based on set prefix/suffix list: need to make. And then rules for how the words sometimes change when these attach. Future steps may lead towards a cleaner, more built out finite state transducer. Also need to check to see how Apertium handles this -- paper by Dolatian et al states that they built out rudimentary ruleset, and getting into the details might be worthwhile.
+- Right now, I am basically requiring classical orthography, but I, and many heritage speakers in the diaspora, write in a more mixed mode, especially if we've spent any time in Hayastan or interacting with Hayastansi output. The current approach is helpful for reinforcing the traditional mode, and I can normalize input, but is it wrong for Western Armenian spelling to drift closer to the reform style?
+
+- What sort of word is է and similar? An auxilary? A function word? A suffix? It is obviously all of these, but how best to integrate? Need to make list of function words separate from words missing from Nayiri lexicon in general (lexicon is stated on project page to be incomplete/rolling release). currently in progress -- have extracted word list. also need to check to see if this is redundant given apertium/hyspell integration, or if would be better served by extracting these from there.
+
+- Currently this is working on inflectional morphology, ie we're taking lemmas and giving them word forms. But Armenian is (at least somewhat) agglutinative. How to handle derivational morphology (ie building words from word-bits)? For example, in present setup from Nayiri, "անհատ" is one lexeme/lemma; but it's also ան = without հատ = one discrete unit, and native speakers would recognize this pattern. A parser should too, and this does not. Quick'n'dirty step one is to do stripping based on set prefix/suffix list: need to make. And then rules for how the words sometimes change when these attach. Future steps may lead towards a cleaner, more built out finite state transducer. Also need to check to see how Apertium handles this -- paper by Dolatian et al states that they built out rudimentary ruleset, and getting into the details might be worthwhile. HySpell also very clearly does something here.
 
 
 ## Grab-bag of small(er) TODOs/stretch goals/related project ideas:
