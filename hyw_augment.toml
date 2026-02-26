@@ -18,4 +18,4 @@ paths = [
 ]
 
 [hyspell]
-dir = "/home/van/ml-work/arm_data/HySpell_3.0.1/Dictionaries"
+dir = "data/Dictionaries"
