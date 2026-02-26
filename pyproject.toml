@@ -10,6 +10,9 @@ authors = [
 
 dependencies = []
 
+[project.scripts]
+hyw-augment = "hyw_augment.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "ipython",
