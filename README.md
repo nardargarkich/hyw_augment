@@ -10,6 +10,8 @@ A morphological augmentation layer for Western Armenian (hyw) — originally tar
 
 This is **model-agnostic**, including human-as-"model" — it sits between a regular user and any LLM or other more in-depth machine tool.
 
+Probably this will become an MCP tool.
+
 ## Why
 
 - The NLP infrastructure has a lot of parts already built (UD treebank, Nayiri Lexicon, DALiH project, Apertium Western Armenian Transducer, Nayiri Codex) but it's not currently connected
@@ -282,6 +284,7 @@ detect-and-enforce (maybe): look at first N words of text, infer which system, f
 ## Grab-bag of small(er) TODOs/stretch goals/related project ideas:
 
   - clean up code
+  - more tests! in files!
   - find/make/grab more texts, especially colloquial ones
-  - create minimap of different latinizations
+  - create lattice of latin letters to armenian -- want to allow latinadar input, requires some lookups for various letter flattenings
   - use actual branches instead of doing active development inside of main (sorry -- wanted to get this off the ground fast, and show work to anyone interested!)
