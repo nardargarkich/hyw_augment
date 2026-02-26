@@ -163,32 +163,32 @@ With a config file present, the CLI loads everything automatically — no flags 
 ### CLI
 
 Analyze a word (uses all configured backends):
-`python -m hyw_augment.cli --analyze "WORD"`
+`hyw-augment --analyze "WORD"`
 
 Generate forms from a lemma:
-`python -m hyw_augment.cli --generate "LEMMA"`
+`hyw-augment --generate "LEMMA"`
 
 Validate a word (checks Nayiri, Apertium, and Hunspell):
-`python -m hyw_augment.cli --validate "WORD"`
+`hyw-augment --validate "WORD"`
 
 Get spelling suggestions:
-`python -m hyw_augment.cli --suggest "MISSPELLED_WORD"`
+`hyw-augment --suggest "MISSPELLED_WORD"`
 
 Convert Reformed (Eastern) orthography to Classical (Western):
-`python -m hyw_augment.cli --convert "REFORMED_TEXT"`
+`hyw-augment --convert "REFORMED_TEXT"`
 
 Look up a word's definition:
-`python -m hyw_augment.cli --define "WORD"`
+`hyw-augment --define "WORD"`
 
 Coverage check:
-`python -m hyw_augment.cli --coverage`
+`hyw-augment --coverage`
 
 Coverage with mismatch export:
-`python -m hyw_augment.cli --coverage --mismatches data/mismatches.tsv`
+`hyw-augment --coverage --mismatches data/mismatches.tsv`
 
 Override config with explicit flags:
-`python -m hyw_augment.cli --nayiri data/*.json --apertium /path/to/apertium-hyw --analyze "WORD"`
-`python -m hyw_augment.cli --hyspell /path/to/Dictionaries --validate "WORD"`
+`hyw-augment --nayiri data/*.json --apertium /path/to/apertium-hyw --analyze "WORD"`
+`hyw-augment --hyspell /path/to/Dictionaries --validate "WORD"`
 
 Extract mismatched words between UD and Nayiri (first pass for building function words list):
 ```
