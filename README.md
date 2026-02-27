@@ -77,6 +77,7 @@ src/hyw_augment/
 ├── orthography.py            # Reformed ↔ Classical orthography conversion
 ├── glossary.py               # Armenian explanatory dictionary (SmallArmDic)
 ├── derivation.py             # Derivational morphology (prefix/suffix stripping) [WIP]
+├── latin_hyw_to_hy.py        # Beginning of system to accept latin letter input [WIP]
 ├── extract_words_from_UD.py  # extracts unmatched words from UD in Nayiri format (potentially now unnecessary, or just duplicative)
 └── coverage.py               # Cross-reference treebank ↔ lexicon
 
