@@ -25,15 +25,15 @@ _POS_MAP: dict[str, str] = {
     "\u0561\u056e.": "ADJECTIVE",      # ած.
     "\u0576\u0580\u0563.": "VERB_TR",  # նրգ. (transitive verb)
     "\u0579\u0566.": "VERB_INTR",      # չզ. (intransitive verb)
-    "\u0585\u057f\u0580.": "LOANWORD", # օdelays. (foreign/loanword)
-    "\u0574\u056f.": "PARTICLE",       # մdelays.
-    "\u0576\u056d.": "PREPOSITION",    # delays.
-    "\u0577\u0572.": "CONJUNCTION",    # delays.
-    "\u0571\u0575\u0576.": "INTERJECTION",  # delays.
-    "\u0564\u0565\u0580.": "PRONOUN",  # delays.
-    "\u057d.":       "PRONOUN_POSS",   # delays. (possessive)
-    "\u057d\u0582\u056e.": "VERB_REFL",  # delays. (reflexive)
-    "\u0576\u0580\u0566.": "VERB_MID",  # delays. (middle voice)
+    "\u0585\u057f\u0580.": "LOANWORD", # օտր. (foreign/loanword)
+    "\u0574\u056f.": "PARTICLE",       # մկ.
+    "\u0576\u056d.": "PREPOSITION",    # նխ.
+    "\u0577\u0572.": "CONJUNCTION",    # շղ.
+    "\u0571\u0575\u0576.": "INTERJECTION",  # ձայն.
+    "\u0564\u0565\u0580.": "PRONOUN",  # դեր.
+    "\u057d.":       "PRONOUN_POSS",   # ս. (possessive)
+    "\u057d\u0582\u056e.": "VERB_REFL",  # սուն. (reflexive)
+    "\u0576\u0580\u0566.": "VERB_MID",  # նրզ. (middle voice)
 }
 
 
