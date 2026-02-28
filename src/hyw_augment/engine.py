@@ -353,13 +353,25 @@ def _expand_paths(paths: tuple[str | Path, ...]) -> list[Path]:
 
 
 def _resolve_config_paths(raw_paths: list[str], base_dir: Path) -> list[Path]:
-    """Resolve config paths relative to base_dir, expanding globs."""
+    """Resolve config paths relative to base_dir, expanding globs.
+
+    Non-glob paths that do not exist are skipped with a warning rather than
+    passed through — this lets generated/optional files (e.g. function-words.json)
+    be listed in the config without crashing on a fresh clone.
+    """
+    import warnings
+
     result = []
     for p in raw_paths:
         full = base_dir / p if not Path(p).is_absolute() else Path(p)
         full_str = str(full)
         if "*" in full_str or "?" in full_str:
             result.extend(Path(m) for m in sorted(glob.glob(full_str)))
-        else:
+        elif full.exists():
             result.append(full)
+        else:
+            warnings.warn(
+                f"hyw_augment: config path not found, skipping: {full}",
+                stacklevel=4,
+            )
     return result
